@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Accessible Gamified Quiz System</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f4f1eb;--surface:#fffdf8;--card:#ffffff;--border:#e8e0d0;
+  --ink:#1a1612;--ink2:#6b6560;--accent:#2d6a4f;--accent-light:#d8f3dc;
+  --gold:#e9b949;--gold-light:#fdf3d7;--danger:#c0392b;--danger-light:#fdecea;
+  --radius:14px;--shadow:0 2px 16px rgba(26,22,18,0.08);--shadow-lg:0 8px 40px rgba(26,22,18,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:24px 16px 60px;
+  background-image:radial-gradient(circle at 10% 20%,rgba(45,106,79,.06) 0%,transparent 50%),
+                   radial-gradient(circle at 90% 80%,rgba(233,185,73,.07) 0%,transparent 50%);
+}
+.display{font-family:'Fraunces',serif;font-weight:900;line-height:1.1;letter-spacing:-1px}
+.screen{display:none;width:100%;max-width:700px;animation:rise .45s cubic-bezier(.22,1,.36,1)}
+.screen.active{display:flex;flex-direction:column;align-items:center}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+/* TOP BAR */
+.top-bar{width:100%;max-width:700px;display:flex;align-items:center;justify-content:space-between;margin-bottom:30px}
+.brand{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;color:var(--accent)}
+.brand em{color:var(--gold);font-style:italic}
+.global-badge{background:var(--gold-light);border:1px solid #deb84a;border-radius:50px;padding:5px 14px;font-size:.75rem;font-weight:700;color:#7a5c10;display:none}
+
+/* HOME */
+.hero{text-align:center;margin-bottom:32px}
+.label-tag{display:inline-block;background:var(--accent-light);color:var(--accent);font-size:.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:5px 14px;border-radius:50px;margin-bottom:14px}
+.hero h1{font-size:clamp(1.9rem,5vw,3rem);color:var(--ink);margin-bottom:10px}
+.hero p{color:var(--ink2);font-size:.95rem;max-width:440px;margin:0 auto;line-height:1.6}
+
+.name-box{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;margin-bottom:22px;box-shadow:var(--shadow)}
+.name-box label{display:block;font-size:.75rem;font-weight:700;color:var(--ink2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px}
+.name-input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:.95rem;color:var(--ink);background:var(--surface);outline:none;transition:border .2s}
+.name-input:focus{border-color:var(--accent)}
+
+.sec-label{width:100%;font-size:.75rem;font-weight:700;color:var(--ink2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+.subject-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-bottom:26px}
+.subject-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);padding:20px 18px;cursor:pointer;transition:all .2s;text-align:left;position:relative}
+.subject-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.subject-card.selected{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+.subject-card .s-icon{font-size:1.7rem;margin-bottom:10px}
+.subject-card h3{font-size:.9rem;font-weight:700;margin-bottom:3px}
+.subject-card p{font-size:.74rem;color:var(--ink2)}
+.s-best{position:absolute;top:10px;right:12px;font-size:.66rem;font-weight:700;background:var(--gold-light);color:#7a5c10;padding:3px 8px;border-radius:50px;display:none}
+
+.btn{background:var(--accent);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:.93rem;padding:14px 32px;border:none;border-radius:50px;cursor:pointer;transition:all .18s;box-shadow:0 4px 14px rgba(45,106,79,.25)}
+.btn:hover{background:#245a41;transform:translateY(-1px);box-shadow:0 6px 20px rgba(45,106,79,.3)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.ghost{background:transparent;color:var(--accent);border:2px solid var(--accent);box-shadow:none}
+.btn.ghost:hover{background:var(--accent-light)}
+
+/* QUIZ */
+.quiz-top{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.q-meta .q-label{font-size:.73rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.8px;display:block}
+.q-meta .q-subj{font-size:.82rem;font-weight:700;color:var(--accent);display:block;margin-top:2px}
+.streak-pill{display:flex;align-items:center;gap:5px;background:var(--gold-light);border:1px solid #deb84a;border-radius:50px;padding:5px 13px;font-size:.78rem;font-weight:700;color:#7a5c10;opacity:0;transition:.3s}
+.streak-pill.show{opacity:1}
+.timer-wrap{display:flex;flex-direction:column;align-items:center}
+.timer-num{font-family:'Fraunces',serif;font-weight:900;font-size:1.6rem;color:var(--ink);transition:color .3s;line-height:1}
+.timer-num.warn{color:var(--gold)}
+.timer-num.crit{color:var(--danger)}
+.timer-lbl{font-size:.65rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px}
+
+.progress-track{width:100%;height:6px;background:var(--border);border-radius:99px;margin-bottom:20px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#52b788);border-radius:99px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+
+.diff-pill{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:4px 11px;border-radius:50px;margin-bottom:10px}
+.diff-pill.easy{background:var(--accent-light);color:var(--accent)}
+.diff-pill.medium{background:var(--gold-light);color:#7a5c10}
+.diff-pill.hard{background:var(--danger-light);color:var(--danger)}
+
+.question-card{width:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 26px;margin-bottom:14px;box-shadow:var(--shadow)}
+.question-card .q-n{font-size:.72rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px}
+.question-card .q-t{font-family:'Fraunces',serif;font-size:1.15rem;font-weight:700;line-height:1.45;color:var(--ink)}
+
+.choices-list{display:flex;flex-direction:column;gap:10px;width:100%}
+.choice-btn{width:100%;background:var(--card);border:2px solid var(--border);border-radius:12px;padding:14px 18px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:.9rem;font-weight:500;color:var(--ink);text-align:left;display:flex;align-items:center;gap:12px;transition:all .18s}
+.choice-btn .c-l{width:29px;height:29px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;flex-shrink:0;background:var(--surface);color:var(--ink2);border:1.5px solid var(--border);transition:all .18s}
+.choice-btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-light)}
+.choice-btn:hover:not(:disabled) .c-l{background:var(--accent);color:#fff;border-color:var(--accent)}
+.choice-btn.correct{border-color:var(--accent);background:var(--accent-light)}
+.choice-btn.correct .c-l{background:var(--accent);color:#fff;border-color:var(--accent)}
+.choice-btn.wrong{border-color:var(--danger);background:var(--danger-light)}
+.choice-btn.wrong .c-l{background:var(--danger);color:#fff;border-color:var(--danger)}
+.choice-btn:disabled{cursor:not-allowed}
+
+.feedback-bar{width:100%;border-radius:10px;padding:13px 18px;display:none;align-items:center;gap:10px;font-weight:600;font-size:.88rem;margin-top:10px}
+.feedback-bar.show{display:flex}
+.feedback-bar.ok{background:var(--accent-light);color:var(--accent);border:1px solid #95d5b2}
+.feedback-bar.bad{background:var(--danger-light);color:var(--danger);border:1px solid #f5b7b1}
+.feedback-bar.tup{background:var(--gold-light);color:#7a5c10;border:1px solid #deb84a}
+
+/* RESULTS */
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;padding:30px 26px;text-align:center;margin-bottom:14px;box-shadow:var(--shadow-lg)}
+.res-student{font-size:.78rem;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.score-ring{width:118px;height:118px;border-radius:50%;border:5px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 16px;background:var(--accent-light);box-shadow:0 0 0 8px rgba(45,106,79,.08)}
+.score-ring .s-n{font-family:'Fraunces',serif;font-size:2.3rem;font-weight:900;color:var(--accent);line-height:1}
+.score-ring .s-d{font-size:.78rem;color:var(--ink2);font-weight:600}
+.grade-t{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;color:var(--ink);margin-bottom:5px}
+.grade-s{font-size:.88rem;color:var(--ink2);line-height:1.5}
+
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-bottom:14px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 10px;text-align:center;box-shadow:var(--shadow)}
+.stat-box .sn{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700}
+.stat-box .sl{font-size:.7rem;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.stat-box.g .sn{color:var(--accent)}
+.stat-box.r .sn{color:var(--danger)}
+.stat-box.y .sn{color:#b8860b}
+
+.review-wrap{width:100%;margin-bottom:20px}
+.review-toggle{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-weight:700;font-size:.88rem;transition:border .2s;margin-bottom:0}
+.review-toggle:hover{border-color:var(--accent)}
+.review-toggle.open{border-bottom-left-radius:0;border-bottom-right-radius:0;border-color:var(--accent)}
+.review-toggle .arr{transition:transform .3s}
+.review-toggle.open .arr{transform:rotate(180deg)}
+.review-list{display:none;flex-direction:column;gap:1px;border:1.5px solid var(--accent);border-top:none;border-bottom-left-radius:var(--radius);border-bottom-right-radius:var(--radius);overflow:hidden}
+.review-list.show{display:flex}
+.review-item{background:var(--card);padding:14px 18px;font-size:.83rem;border-bottom:1px solid var(--border)}
+.review-item:last-child{border-bottom:none}
+.ri-q{font-weight:700;color:var(--ink);margin-bottom:7px;line-height:1.4}
+.ri-row{display:flex;align-items:flex-start;gap:6px;margin-top:3px;font-size:.79rem}
+.ri-c{color:var(--accent);font-weight:600}
+.ri-w{color:var(--danger);font-weight:600}
+.ri-m{color:var(--ink2)}
+
+.btn-row{display:flex;gap:12px;width:100%}
+.btn-row .btn{flex:1}
+
+@media(max-width:490px){
+  .subject-grid{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:1fr 1fr}
+  .btn-row{flex-direction:column}
+  .hero h1{font-size:1.75rem}
+}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+</style>
+</head>
+<body>
+
+<!-- TOP BRAND BAR -->
+<div class="top-bar">
+  <div class="brand">AGQS <em>·</em> SHS</div>
+  <div class="global-badge" id="global-badge"></div>
+</div>
+
+<!-- ══ HOME ══ -->
+<div class="screen active" id="screen-home">
+  <div class="hero">
+    <div class="label-tag">Senior High School · Core Subjects</div>
+    <h1 class="display">Accessible Gamified<br>Quiz System</h1>
+    <p>Test your knowledge, track your streak, and review every answer after each quiz.</p>
+  </div>
+
+  <div class="name-box">
+    <label for="sname">Your Name</label>
+    <input id="sname" class="name-input" type="text" placeholder="e.g. Maria Santos" maxlength="40" autocomplete="off"/>
+  </div>
+
+  <div class="sec-label">Choose a Subject</div>
+  <div class="subject-grid">
+    <div class="subject-card" onclick="selectSubject(this,'english')" tabindex="0" role="button">
+      <span class="s-best" id="best-english"></span>
+      <div class="s-icon">📝</div>
+      <h3>English</h3>
+      <p>Grammar, vocabulary, sentence structure</p>
+    </div>
+    <div class="subject-card" onclick="selectSubject(this,'reading')" tabindex="0" role="button">
+      <span class="s-best" id="best-reading"></span>
+      <div class="s-icon">📖</div>
+      <h3>Reading &amp; Writing</h3>
+      <p>Academic text, rhetoric, composition</p>
+    </div>
+    <div class="subject-card" onclick="selectSubject(this,'science')" tabindex="0" role="button">
+      <span class="s-best" id="best-science"></span>
+      <div class="s-icon">🔬</div>
+      <h3>Science</h3>
+      <p>Earth &amp; Life Science fundamentals</p>
+    </div>
+    <div class="subject-card" onclick="selectSubject(this,'math')" tabindex="0" role="button">
+      <span class="s-best" id="best-math"></span>
+      <div class="s-icon">📐</div>
+      <h3>Mathematics</h3>
+      <p>Functions, algebra, rational expressions</p>
+    </div>
+  </div>
+
+  <button class="btn" id="start-btn" onclick="startQuiz()" disabled>Select a Subject to Begin</button>
+</div>
+
+<!-- ══ QUIZ ══ -->
+<div class="screen" id="screen-quiz">
+  <div class="quiz-top">
+    <div class="q-meta">
+      <span class="q-label" id="q-counter">Question 1 / 10</span>
+      <span class="q-subj" id="q-subj">—</span>
+    </div>
+    <div class="streak-pill" id="streak-pill">🔥 <span id="streak-num">0</span> in a row!</div>
+    <div class="timer-wrap">
+      <div class="timer-num" id="timer-num">15</div>
+      <div class="timer-lbl">sec</div>
+    </div>
+  </div>
+
+  <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+  <div id="diff-wrap"></div>
+
+  <div class="question-card">
+    <div class="q-n" id="q-n">Q1</div>
+    <div class="q-t" id="q-t">Loading…</div>
+  </div>
+
+  <div class="choices-list" id="choices-list"></div>
+  <div class="feedback-bar" id="feedback-bar"><span id="fb-icon"></span><span id="fb-text"></span></div>
+</div>
+
+<!-- ══ RESULT ══ -->
+<div class="screen" id="screen-result">
+  <div class="result-card">
+    <div class="res-student" id="res-student">Student</div>
+    <div class="score-ring"><span class="s-n" id="res-score">0</span><span class="s-d">/ 10</span></div>
+    <div class="grade-t" id="res-grade">—</div>
+    <div class="grade-s" id="res-msg">—</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box g"><div class="sn" id="sc">0</div><div class="sl">Correct</div></div>
+    <div class="stat-box r"><div class="sn" id="sw">0</div><div class="sl">Wrong</div></div>
+    <div class="stat-box y"><div class="sn" id="ss">0</div><div class="sl">Best Streak</div></div>
+  </div>
+
+  <div class="review-wrap">
+    <div class="review-toggle" id="rev-toggle" onclick="toggleReview()">
+      <span>📋 Review Your Answers</span><span class="arr">▼</span>
+    </div>
+    <div class="review-list" id="rev-list"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn ghost" onclick="goHome()">← Change Subject</button>
+    <button class="btn" onclick="retryQuiz()">Try Again</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS={
+  english:[
+    {q:"Which sentence is grammatically correct?",c:["She don't like apples.","He goes to school every day.","They was happy.","We is ready."],a:1,d:"easy"},
+    {q:"What is the plural form of 'criterion'?",c:["Criterions","Criterias","Criteria","Criterium"],a:2,d:"medium"},
+    {q:"Which word is an antonym of 'benevolent'?",c:["Kind","Generous","Malevolent","Charitable"],a:2,d:"easy"},
+    {q:"'Neither the students nor the teacher ___ present.' — Choose the correct verb.",c:["were","are","is","have been"],a:2,d:"hard"},
+    {q:"'The bag is very heavy.' — What part of speech is 'heavy'?",c:["Noun","Adverb","Verb","Adjective"],a:3,d:"easy"},
+    {q:"Which sentence uses the passive voice?",c:["Maria ate the cake.","The cake was eaten by Maria.","Maria is eating cake.","Maria will eat the cake."],a:1,d:"medium"},
+    {q:"What does the prefix 'mis-' mean in 'misunderstand'?",c:["Again","Not","Wrongly","Before"],a:2,d:"easy"},
+    {q:"Which is an example of a compound sentence?",c:["She sings.","She sings, and he dances.","Because she sings, people listen.","The talented singer performed."],a:1,d:"medium"},
+    {q:"'He bit off more than he could chew.' — This is an example of:",c:["Simile","Metaphor","Idiom","Hyperbole"],a:2,d:"medium"},
+    {q:"Choose the correct word: 'The ___ of the school gave a speech.'",c:["principle","principal","either","neither"],a:1,d:"hard"},
+  ],
+  reading:[
+    {q:"What is the main purpose of a thesis statement?",c:["To summarize the essay","To state the main argument","To list evidence","To introduce the topic only"],a:1,d:"easy"},
+    {q:"Which text structure compares two or more concepts?",c:["Sequence","Cause and Effect","Compare and Contrast","Problem and Solution"],a:2,d:"easy"},
+    {q:"A text that aims to convince the reader is called:",c:["Narrative","Descriptive","Persuasive","Expository"],a:2,d:"easy"},
+    {q:"'Context clues' help a reader to:",c:["Find grammar rules","Determine word meaning from surrounding text","Understand the author's biography","Identify the genre"],a:1,d:"easy"},
+    {q:"What is the purpose of a conclusion paragraph?",c:["Introduce new ideas","Present new evidence","Summarize and reinforce the main point","State the thesis for the first time"],a:2,d:"easy"},
+    {q:"Which of the following is a primary source?",c:["A textbook chapter","An encyclopedia entry","A diary written during World War II","A documentary film"],a:2,d:"medium"},
+    {q:"'Imagery' in writing appeals primarily to the reader's:",c:["Logic","Senses","Background knowledge","Emotions only"],a:1,d:"medium"},
+    {q:"An academic text is best characterized by:",c:["Casual language and personal opinions","Formal language, evidence, and citations","Emotional storytelling","Short bullet-point lists"],a:1,d:"medium"},
+    {q:"What is the function of a topic sentence?",c:["To end a paragraph","To introduce the main idea of a paragraph","To provide supporting details","To cite a source"],a:1,d:"easy"},
+    {q:"Which rhetorical appeal relies on the speaker's credibility?",c:["Pathos","Logos","Ethos","Kairos"],a:2,d:"hard"},
+  ],
+  science:[
+    {q:"What is the basic unit of life?",c:["Atom","Cell","Organ","Tissue"],a:1,d:"easy"},
+    {q:"Which organelle is called the 'powerhouse of the cell'?",c:["Nucleus","Ribosome","Mitochondria","Golgi apparatus"],a:2,d:"easy"},
+    {q:"What gas is most abundant in Earth's atmosphere?",c:["Oxygen","Carbon Dioxide","Nitrogen","Argon"],a:2,d:"easy"},
+    {q:"Photosynthesis primarily occurs in which organelle?",c:["Nucleus","Chloroplast","Vacuole","Mitochondria"],a:1,d:"easy"},
+    {q:"What type of rock is formed from cooling lava or magma?",c:["Sedimentary","Metamorphic","Igneous","Limestone"],a:2,d:"easy"},
+    {q:"DNA stands for:",c:["Deoxyribonucleic Acid","Diribonucleic Atom","Deoxyribose Nuclein Acid","Deoxyribose Nitrogen Acid"],a:0,d:"medium"},
+    {q:"Which process converts glucose into usable energy inside cells?",c:["Photosynthesis","Transpiration","Cellular Respiration","Osmosis"],a:2,d:"medium"},
+    {q:"What layer of Earth lies between the crust and the outer core?",c:["Asthenosphere","Mantle","Lithosphere","Inner core"],a:1,d:"medium"},
+    {q:"Which of the following is a renewable energy source?",c:["Coal","Natural gas","Solar energy","Petroleum"],a:2,d:"easy"},
+    {q:"What is the correct sequence of ecological organization (smallest to largest)?",c:["Ecosystem→Community→Population→Organism","Organism→Population→Community→Ecosystem","Population→Organism→Ecosystem→Community","Community→Ecosystem→Organism→Population"],a:1,d:"hard"},
+  ],
+  math:[
+    {q:"What is the domain of f(x) = 1 / (x – 3)?",c:["All real numbers except 3","All real numbers","x > 3","x < 3"],a:0,d:"medium"},
+    {q:"Solve for x: 2x + 5 = 13",c:["x = 4","x = 9","x = 3","x = 6"],a:0,d:"easy"},
+    {q:"Which of the following is a rational function?",c:["f(x) = √x","f(x) = (x+2)/(x–1)","f(x) = 2^x","f(x) = |x|"],a:1,d:"medium"},
+    {q:"What is the range of f(x) = x²?",c:["All real numbers","y ≥ 0","y > 0","y ≤ 0"],a:1,d:"easy"},
+    {q:"Evaluate f(3) if f(x) = 2x² – x + 4",c:["19","13","25","17"],a:0,d:"medium"},
+    {q:"Simplify: (x² – 9) / (x – 3)",c:["x – 3","x + 3","x² + 3","x + 9"],a:1,d:"medium"},
+    {q:"The vertical line test is used to determine if a graph represents a:",c:["Relation","Function","Polynomial","Sequence"],a:1,d:"easy"},
+    {q:"What is the inverse of f(x) = 3x + 6?",c:["f⁻¹(x) = (x–6)/3","f⁻¹(x) = (x+6)/3","f⁻¹(x) = 3x–6","f⁻¹(x) = x/3"],a:0,d:"hard"},
+    {q:"Which equation represents a linear function?",c:["y = x²","y = 2x + 1","y = x³","y = 1/x"],a:1,d:"easy"},
+    {q:"What is the sum of the roots of x² – 5x + 6 = 0?",c:["6","–5","5","–6"],a:2,d:"hard"},
+  ],
+};
+
+const SNAMES={english:"English",reading:"Reading & Writing",science:"Science",math:"Mathematics"};
+const LETTERS=['A','B','C','D'];
+const TOTAL=10;
+
+let selectedSubject=null,questions=[],currentQ=0;
+let score=0,wrong=0,streak=0,bestStreak=0;
+let timerInterval=null,timeLeft=15;
+let sName='',bestScores={},reviewLog=[];
+
+// ── BEST SCORES ──
+function loadBests(){
+  try{bestScores=JSON.parse(localStorage.getItem('agqs2_best')||'{}')}catch(e){bestScores={}}
+  Object.keys(SNAMES).forEach(s=>{
+    const el=document.getElementById('best-'+s);
+    if(el&&bestScores[s]!==undefined){el.textContent='Best: '+bestScores[s]+'/10';el.style.display='block'}
+  });
+  const vals=Object.values(bestScores);
+  if(vals.length){
+    const el=document.getElementById('global-badge');
+    el.textContent='🏅 Top Score: '+Math.max(...vals)+'/10';
+    el.style.display='block';
+  }
+}
+function saveBest(s,sc){
+  if(bestScores[s]===undefined||sc>bestScores[s]){
+    bestScores[s]=sc;
+    try{localStorage.setItem('agqs2_best',JSON.stringify(bestScores))}catch(e){}
+  }
+}
+
+// ── HOME ──
+function selectSubject(el,subj){
+  document.querySelectorAll('.subject-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');selectedSubject=subj;
+  const btn=document.getElementById('start-btn');
+  btn.disabled=false;btn.textContent='Start '+SNAMES[subj]+' Quiz →';
+}
+document.querySelectorAll('.subject-card').forEach(c=>{
+  c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')c.click()});
+});
+
+function startQuiz(){
+  if(!selectedSubject)return;
+  sName=document.getElementById('sname').value.trim()||'Student';
+  questions=shuffle([...QUESTIONS[selectedSubject]]).slice(0,TOTAL);
+  currentQ=0;score=0;wrong=0;streak=0;bestStreak=0;reviewLog=[];
+  document.getElementById('q-subj').textContent=SNAMES[selectedSubject];
+  showScreen('screen-quiz');
+  loadQuestion();
+}
+
+// ── QUIZ ──
+function loadQuestion(){
+  const d=questions[currentQ];
+  document.getElementById('q-counter').textContent=`Question ${currentQ+1} / ${TOTAL}`;
+  document.getElementById('q-n').textContent='Q'+(currentQ+1);
+  document.getElementById('q-t').textContent=d.q;
+  document.getElementById('progress-fill').style.width=`${(currentQ/TOTAL)*100}%`;
+  document.getElementById('diff-wrap').innerHTML=`<span class="diff-pill ${d.d}">${{easy:'🟢 Easy',medium:'🟡 Average',hard:'🔴 Hard'}[d.d]}</span>`;
+  const sp=document.getElementById('streak-pill');
+  if(streak>=2){sp.classList.add('show');document.getElementById('streak-num').textContent=streak}else sp.classList.remove('show');
+  const list=document.getElementById('choices-list');
+  list.innerHTML='';
+  d.c.forEach((ch,i)=>{
+    const btn=document.createElement('button');
+    btn.className='choice-btn';
+    btn.innerHTML=`<span class="c-l">${LETTERS[i]}</span>${ch}`;
+    btn.onclick=()=>answer(i,d.a,btn,list,d);
+    list.appendChild(btn);
+  });
+  document.getElementById('feedback-bar').className='feedback-bar';
+  startTimer();
+}
+
+function answer(chosen,correct,clickedBtn,list,d){
+  clearInterval(timerInterval);
+  list.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
+  const ok=chosen===correct;
+  if(ok){score++;streak++;if(streak>bestStreak)bestStreak=streak;clickedBtn.classList.add('correct');fb('ok','✅','Correct! Well done.');}
+  else{wrong++;streak=0;clickedBtn.classList.add('wrong');list.querySelectorAll('.choice-btn')[correct].classList.add('correct');fb('bad','❌','Wrong. Correct answer: '+d.c[correct]);}
+  reviewLog.push({q:d.q,c:d.c,correct,chosen,ok});
+  setTimeout(()=>{currentQ++;currentQ<TOTAL?loadQuestion():showResults();},1800);
+}
+
+function fb(type,icon,msg){
+  const el=document.getElementById('feedback-bar');
+  el.className='feedback-bar '+type+' show';
+  document.getElementById('fb-icon').textContent=icon;
+  document.getElementById('fb-text').textContent=msg;
+}
+
+function startTimer(){
+  timeLeft=15;updateTimer();clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{timeLeft--;updateTimer();if(timeLeft<=0){clearInterval(timerInterval);timeUp();}},1000);
+}
+function updateTimer(){
+  const el=document.getElementById('timer-num');
+  el.textContent=timeLeft;
+  el.className='timer-num'+(timeLeft<=4?' crit':timeLeft<=8?' warn':'');
+}
+function timeUp(){
+  const list=document.getElementById('choices-list');
+  list.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
+  const d=questions[currentQ];
+  list.querySelectorAll('.choice-btn')[d.a].classList.add('correct');
+  wrong++;streak=0;fb('tup','⏰',"Time's up! Correct: "+d.c[d.a]);
+  reviewLog.push({q:d.q,c:d.c,correct:d.a,chosen:-1,ok:false});
+  setTimeout(()=>{currentQ++;currentQ<TOTAL?loadQuestion():showResults();},1800);
+}
+
+// ── RESULTS ──
+function showResults(){
+  clearInterval(timerInterval);
+  document.getElementById('progress-fill').style.width='100%';
+  saveBest(selectedSubject,score);
+  const pct=score/TOTAL*100;
+  let grade,msg;
+  if(pct>=90){grade='Outstanding 🏆';msg='Exceptional performance! You are quiz-ready.'}
+  else if(pct>=75){grade='Proficient 🌟';msg='Great work! Keep pushing for a perfect score.'}
+  else if(pct>=60){grade='Approaching ✍️';msg='Good effort. Review your missed items and try again.'}
+  else{grade='Needs Review 📚';msg='Don\'t give up — consistent practice leads to mastery.'}
+  document.getElementById('res-student').textContent=sName+" · "+SNAMES[selectedSubject];
+  document.getElementById('res-score').textContent=score;
+  document.getElementById('res-grade').textContent=grade;
+  document.getElementById('res-msg').textContent=msg;
+  document.getElementById('sc').textContent=score;
+  document.getElementById('sw').textContent=wrong;
+  document.getElementById('ss').textContent=bestStreak;
+  // build review
+  const rl=document.getElementById('rev-list');
+  rl.innerHTML='';
+  reviewLog.forEach((it,i)=>{
+    const div=document.createElement('div');div.className='review-item';
+    const ans=it.chosen>=0?`${LETTERS[it.chosen]}. ${it.c[it.chosen]}`:'(Timed out)';
+    div.innerHTML=`<div class="ri-q">Q${i+1}. ${it.q}</div>
+      <div class="ri-row"><span class="ri-m">Your answer:</span><span class="${it.ok?'ri-c':'ri-w'}">${it.ok?'✅':'❌'} ${ans}</span></div>
+      ${!it.ok?`<div class="ri-row"><span class="ri-m">Correct answer:</span><span class="ri-c">${LETTERS[it.correct]}. ${it.c[it.correct]}</span></div>`:''}`;
+    rl.appendChild(div);
+  });
+  document.getElementById('rev-toggle').classList.remove('open');
+  rl.classList.remove('show');
+  showScreen('screen-result');loadBests();
+}
+
+function toggleReview(){
+  document.getElementById('rev-toggle').classList.toggle('open');
+  document.getElementById('rev-list').classList.toggle('show');
+}
+function goHome(){
+  selectedSubject=null;
+  document.querySelectorAll('.subject-card').forEach(c=>c.classList.remove('selected'));
+  const btn=document.getElementById('start-btn');btn.disabled=true;btn.textContent='Select a Subject to Begin';
+  showScreen('screen-home');loadBests();
+}
+function retryQuiz(){startQuiz()}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;
+}
+
+loadBests();
+</script>
+</body>
+</html>
